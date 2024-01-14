@@ -1,0 +1,140 @@
+Phase 1: When a problem comes along, you must zip it!
+
+	-Search objdump -d for clues
+		-162f:	48 8d 35 1a 1b 00 00 	lea    0x1b1a(%rip),%rsi      # 3150 <_IO_stdin_used+0x150>
+			*shows an address being loaded before <strings_not_equal> function*
+
+	-Disassemble main ( disas main )
+
+	-Disassemble phase_1 ( disas phase_1 )
+		-<strings_not_equal> function indicates string input
+
+	-Check list of all printable strings to use ( strings bomb )
+
+	-Set breakpoint at explode_bomb ( break explode_bomb )
+	-Set breakpoint at phase_1 ( break phase_1 )
+	-Run bomb
+
+	-Run test string, resulting in breakpoint in phase_1
+		-Disassemble phase_1 to view assembly code ( disas phase_1 )
+			-Locate memory address of comparison string within assembly code *lea - load address line*
+			-Display characters of memory address ( x/50c 0x0555555557150 )
+
+Phase 2: 1 2 4 8 16 32
+
+	-Search objdump -d for clues
+		-<read_six_numbers> function is called, indicating input of 6 numbers is needed
+
+	-Disassemble phase_2 ( disas phase_2 )
+		-<read_six_numbers> function indicates input of 6 seperate numbers
+
+	-Disassemble read_six_numbers ( disas read_six_numbers )
+		-Memory address at <+33> lea 0x1541(%rip),%rsi      # 0x55555555743d
+			-Display string shows us "%d %d %d %d %d %d", confirming 6 seperate number input ( x/20c 0x55555555743d )
+
+	-Set breakpoint at explode_bomb ( break explode_bomb )
+	-Set breakpoint at phase_2 ( break phase_2 )
+	-Run bomb
+
+	-Run test set of numbers, resulting in breakpoint in phase_2 ( ex. 1 2 3 4 5 6 )
+
+	-Disassemble phase_2 ( disas phase_2 )
+		-Jump to address of first comparison using until ( until 0x000055555555566d )
+		-Check registers ( i r )
+
+		-Step through next instructions ( stepi )
+		-Check registers ( i r )
+
+		-Continue until breakpoint in explode_bomb
+		-Check registers ( i r )
+			-Take note of any registers that are changing values ( $rax changed from 6 to 1 during comparison and eventually changed during each run through )
+
+	-Run bomb again using rax register value from previous run through in input
+
+	-Repeat until all 6 digits are known
+
+Phase 3: 2 84
+
+	-Search objdump -d for clues
+		-
+	
+	-Disassemble phase_3 ( disas phase_3 )
+		-Memory address at <+32>: lea 0x1d69(%rip),%rdx  # 0x5555555571c0
+			-Display string shows us "%d %d", confirming 2 seperate number input ( x/s 0x5555555571c0 )
+
+	-Set breakpoint at explode_bomb ( break explode_bomb )
+	-Set breakpoint at phase_3 ( break phase_3 )
+	-Run bomb
+
+FIRST NUMBER
+	-Run test of numbers, resulting in breakpoint at phase_3 ( ex. 1 3 )
+	-Run until comparison at <+44>: cmp $0x1,%eax ( until 0x00005555555556e5 )
+	-Display registers ( i r )
+	-$rax contains value 2, which is our first number.
+
+SECOND NUMBER
+	-Run test of numbers with correct first number, resulting in breakpoint at explode_bomb ( ex. 2 50 )
+	-List registers ( i r )
+	-$rax contains value 84, which is our second number.
+
+Phase 4: 4 2
+	-Search objdump -d for clues
+		-
+
+	-Disassemble phase_4 ( disas phase_4 )
+		-Memory address at <+32>: lea 0x1c42(%rip),%rsi  # 0x3449
+			-Display string shows us "%d %d", confirming 2 seperate number input ( x/s 0x3449 )
+		-Comparison at <+49> compares 0xe (14) to first input
+			-Input must be between 0 - 14?
+		-Comparison at <+78> compares output of func4 and 2. 
+			*Output of func4 must be 2*
+		-func4 does ???
+		
+		-Lucky guess of second number got me through phase_4
+
+Phase 5: 21 115
+	-Search objdump -d for clues
+		-
+
+	-Disassemble phase_5 ( disas phase_5 )
+		-Memory address at <+32>: lea 0x1bc9(%rip),%rsi  # 0x555555557449
+			-Display string shows us "%d %d", confirming 2 seperate number input ( x/s 0x555555557449 )
+
+FIRST NUMBER
+	-
+
+	-edx must equal 0xf, meaning first input has to be 5, 21, 37, etc... (Add 16 each time)
+	-ecx is compared to rsp, which is 15, so we need ecx to equal 15
+
+SECOND NUMBER
+	-Run until comparison at <+107>: cmp %ecx, 0x4(%rsp)
+		-List registers ( i r )
+			-rcx = 115, which is our second number
+
+Phase 6: 4 2 5 3 6 1
+
+	-read-six-numbers function gives us answer format ( %d %d %d %d %d %d )
+
+	- Memory address at <+133> loads in NODE 1 -> RDX
+		-eXamine digit at RDX ( x/d $rdx )
+			-Gives us Node 1: -87
+		-eXamine digit at RDX + 2 bytes ( x/d $rdx+16 )
+			-Gives us Node 2: -83
+		-eXamine digit at RDX + 4 bytes ( x/d $rdx+32 )
+			-Gives us Node 3: 55
+		-eXamine digit at RDX + 6 bytes ( x/d $rdx+48 )
+			-Gives us Node 4: -87
+		-eXamine digit at RDX + 8 bytes ( x/d $rdx+64 )
+			-Gives us Node 5: -83
+		-eXamine digit at RDX + 10 bytes ( x/d $rdx+80 )
+			-Gives us Host Table. Trial and error to find Node 6
+
+		-Run until <+255> explode_bomb call
+			-eXamine digit at RBX ( x/d $rbx )
+				-Gives us Node 6: 163
+			
+		-Run code until explode_bomb with different test inputs within format limitations
+			-
+			
+
+Phase 7: ???

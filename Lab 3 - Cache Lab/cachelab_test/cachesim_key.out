@@ -1,0 +1,6 @@
+[result] hits: 2 misses: 5 miss rate: 71% total running time: 507 cycle
+[result] hits: 2 misses: 6 miss rate: 75% total running time: 608 cycle
+[result] hits: 3 misses: 5 miss rate: 62% total running time: 508 cycle
+[result] hits: 4 misses: 14 miss rate: 77% total running time: 1418 cycle
+[result] hits: 3 misses: 15 miss rate: 83% total running time: 1518 cycle
+[result] hits: 6 misses: 12 miss rate: 66% total running time: 1218 cycle
